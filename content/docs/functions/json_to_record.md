@@ -1,6 +1,6 @@
 ---
 title: Postgres json_to_record function
-subtitle: convert JSON object to a record
+subtitle: Converts a JSON object to a record
 enableTableOfContents: true
 ---
 
@@ -8,7 +8,7 @@ You can use the `json_to_record` function to convert a top-level JSON object int
 
 This function is useful when you need to parse JSON data received from external sources, such as APIs or file uploads, and store it in a structured format. By using `json_to_record`, you can easily extract values from JSON and map them to the corresponding columns in your database table. 
 
-**Function Signature**
+**Function signature**
 ```sql
 json_to_record(json JSON) AS (column_name column_type [, ...])
 ```
@@ -47,14 +47,12 @@ SELECT *
 FROM json_to_record('{"id": "123", "name": "John Doe", "department": "Engineering", "salary": "75000"}') AS x(id INT, name TEXT, department TEXT, salary NUMERIC);
 ```
 
-To verify,
-
-Query:
+To verify, we can run the following:
 ```sql
 SELECT * FROM employees;
 ```
 
-Returns:
+This query returns the following result:
 ```text
 | id | name     | department   | salary |
 |----|----------|--------------|--------|
@@ -77,7 +75,7 @@ FROM json_to_record('{
 RETURNING *;
 ```
 
-Returns:
+This query returns the following result:
 ```text
 | id | name       | department   | salary |
 |----|------------|--------------|--------|
@@ -85,9 +83,9 @@ Returns:
 ```
 
 ### Handling nested data
-`json_to_record` can also be used to handle nested JSON input data. 
+`json_to_record` can also be used to handle nested JSON input data (i.e. keys with values that are JSON objects themselves). You need to first define a [custom Postgres type](https://www.postgresql.org/docs/current/sql-createtype.html). The newly created type can then be used in the column definition list along with the other columns. 
 
-You'd need to first define a custom type. It can then be used in the column definition list along with the other columns.
+Below is an example, where we handle the `address` field by creating an `ADDRESS_TYPE` type first. 
 
 Query:
 ```sql
@@ -109,7 +107,7 @@ FROM json_to_record('{
 }') AS x(id INT, name TEXT, department TEXT, salary NUMERIC, address ADDRESS_TYPE);
 ```
 
-Returns:
+This query returns the following result:
 ```text
 | id | name        | department | salary | address                     |
 |----|-------------|------------|--------|-----------------------------|
@@ -119,8 +117,20 @@ Returns:
 ## Additional considerations
 
 ### Alternative options
-- `jsonb_to_record` - It has the same functionality to `json_to_record`, but accepts JSONB input instead of JSON. 
-- `json_to_recordset` - It can be used similarly to parse JSON, the difference being that it returns a set of records instead of a single record. For example, if you have an array of JSON objects, you can use `json_to_recordset` to convert each object into a new row. 
+- [json_populate_record](./json_populate_record) - It can also be used to create records using values from a JSON object. The difference is that `json_populate_record` requires the record type to be defined beforehand, while `json_to_record` needs the type definition inline. 
+- [json_to_recordset](./json_to_recordset) - It can be used similarly to parse JSON, the difference being that it returns a set of records instead of a single record. For example, if you have an array of JSON objects, you can use `json_to_recordset` to convert each object into a new row. 
+- [jsonb_to_record](./jsonb_to_record) - It provides the same functionality to `json_to_record`, but accepts JSONB input instead of JSON. Note that in cases where the input payload type isn't exactly specified, either of the two functions can be used. For ex, the query below:
+    ```sql
+    SELECT *
+    FROM json_to_record('{"id": "123", "name": "John Doe", "department": "Engineering"}') 
+    AS x(id INT, name TEXT, department TEXT);
+    ```
+    works just as well as the JSONB variant, since Postgres casts the literal JSON object to JSON or JSONB depending on the context.
+    ```sql
+    SELECT *
+    FROM jsonb_to_record('{"id": "123", "name": "Sally", "department": "Engineering"}')
+    AS x(id INT, name TEXT, department TEXT);
+    ```
 
 ## Resources
 - [Postgres documentation: JSON functions](https://www.postgresql.org/docs/current/functions-json.html)
